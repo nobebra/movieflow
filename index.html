@@ -201,7 +201,7 @@
 
     <script>
         // === НАСТРОЙКИ ===
-        const PROXY_URL = 'https://thingproxy.freeboard.io/fetch/';
+        const PROXY_URL = '';  // Пустая строка
         const API_KEY = '1dd11f7a4931848fe0321bff3cf906ba';
 
         let movies = JSON.parse(localStorage.getItem('myMovies')) || [];
@@ -246,27 +246,35 @@
             btn.textContent = 'Поиск...';
 
             try {
-                const targetUrl = `https://api.themoviedb.org/3/search/movie?api_key=${API_KEY}&language=ru-RU&query=${encodeURIComponent(title)}`;
-                const response = await fetch(PROXY_URL + encodeURIComponent(targetUrl));
-                const data = await response.json();
+    const targetUrl = `https://api.themoviedb.org/3/search/movie?api_key=${API_KEY}&language=ru-RU&query=${encodeURIComponent(title)}`;
+    
+    // Если PROXY_URL пустая — используем прямой URL
+    const fetchUrl = PROXY_URL ? PROXY_URL + encodeURIComponent(targetUrl) : targetUrl;
+    
+    console.log('Запрос:', fetchUrl);  // Для отладки
+    
+    const response = await fetch(fetchUrl);
+    
+    if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    }
+    
+    const data = await response.json();
 
-                if (data.results && data.results.length > 0) {
-                    if (data.results.length === 1) {
-                        addMovieToCollection(data.results[0], rating);
-                        document.getElementById('movieInput').value = '';
-                    } else {
-                        showSelectionModal(data.results, rating);
-                    }
-                } else {
-                    showMessage(`Фильм "${title}" не найден`);
-                }
-            } catch (error) {
-                showMessage('Ошибка соединения. Попробуйте позже.');
-                console.error(error);
-            } finally {
-                btn.disabled = false;
-                btn.textContent = 'Добавить фильм';
-            }
+    if (data.results && data.results.length > 0) {
+        if (data.results.length === 1) {
+            addMovieToCollection(data.results[0], rating);
+            document.getElementById('movieInput').value = '';
+        } else {
+            showSelectionModal(data.results, rating);
+        }
+    } else {
+        showMessage(`Фильм "${title}" не найден`);
+    }
+} catch (error) {
+    console.error('Ошибка:', error);
+    showMessage('Ошибка: ' + error.message);
+}
         }
 
         function showSelectionModal(results, rating) {
